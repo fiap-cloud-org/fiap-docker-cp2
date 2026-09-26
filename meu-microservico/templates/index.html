@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuários · meu-microservico</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <div>
+        <p class="kicker">meu-microservico</p>
+        <h1>Usuários</h1>
+        <p class="sub">Lidos da tabela <code>usuarios</code> do banco <code>{{ banco }}</code> no container <code>{{ host }}</code>, persistido no volume <code>dados_mysql</code>.</p>
+      </div>
+      <div class="meta">
+        <span class="badge {{ 'badge--erro' if erro else 'badge--ok' }}">
+          <span class="dot"></span>{{ 'MySQL indisponível' if erro else 'MySQL conectado' }}
+        </span>
+        <span class="count"><strong id="total">{{ usuarios|length }}</strong> cadastrados</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <section class="card">
+        {% if erro %}
+          <p class="empty">{{ erro }}</p>
+        {% elif not usuarios %}
+          <p class="empty">Nenhum usuário cadastrado.</p>
+        {% else %}
+          <ul class="users" id="lista">
+            {% for u in usuarios %}
+              <li class="user">
+                <span class="avatar" aria-hidden="true">{{ (u.nome.split()[0][0] ~ (u.nome.split()[-1][0] if u.nome.split()|length > 1 else ''))|upper }}</span>
+                <div class="user__info">
+                  <strong>{{ u.nome }}</strong>
+                  <span>{{ u.email }}</span>
+                </div>
+                <span class="user__id">#{{ u.id }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </section>
+
+      <aside class="card card--form">
+        <h2>Novo usuário</h2>
+        <p class="hint">Envia <code>POST /usuarios</code>. A senha é gravada só como hash.</p>
+        <form id="form" autocomplete="off">
+          <label>Nome <input name="nome" required maxlength="100" placeholder="Nome completo"></label>
+          <label>E-mail <input name="email" type="email" required maxlength="100" placeholder="nome@exemplo.com"></label>
+          <label>Senha <input name="senha" type="password" required minlength="8" placeholder="8 caracteres ou mais" autocomplete="new-password"></label>
+          <button type="submit">Cadastrar</button>
+          <p class="msg" id="msg" role="status" aria-live="polite"></p>
+        </form>
+      </aside>
+    </div>
+
+    <footer class="foot">
+      <a href="/usuarios">GET /usuarios</a>
+      <a href="/status">GET /status</a>
+      <span>Flask · Gunicorn · MySQL 8 · Docker Compose</span>
+    </footer>
+  </main>
+
+  <script>
+    const form = document.getElementById('form');
+    const msg = document.getElementById('msg');
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const botao = form.querySelector('button');
+      botao.disabled = true;
+      msg.className = 'msg';
+      msg.textContent = 'Enviando…';
+      try {
+        const resp = await fetch('/usuarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(Object.fromEntries(new FormData(form))),
+        });
+        const dados = await resp.json();
+        if (!resp.ok) throw new Error(dados.error || 'Erro ao cadastrar');
+        msg.className = 'msg msg--ok';
+        msg.textContent = `Usuário #${dados.id} cadastrado.`;
+        setTimeout(() => location.reload(), 900);
+      } catch (e) {
+        msg.className = 'msg msg--erro';
+        msg.textContent = e.message;
+        botao.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
