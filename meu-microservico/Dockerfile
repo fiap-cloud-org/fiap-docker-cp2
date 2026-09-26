@@ -1,19 +1,20 @@
 # Estágio 1: instala as dependências num virtualenv isolado
-FROM python:3.12-slim AS builder
+FROM python:3.12-alpine AS builder
 WORKDIR /app
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip uninstall -y pip
 
 # Estágio 2: imagem final só com o runtime, sem pip e rodando como usuário comum
-FROM python:3.12-slim
+FROM python:3.12-alpine
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 RUN python -m pip uninstall -y pip \
-    && groupadd --gid 1001 app \
-    && useradd --uid 1001 --gid app --no-create-home --shell /usr/sbin/nologin app
+    && addgroup -g 1001 -S app \
+    && adduser -S -u 1001 -G app -H -s /sbin/nologin app
 COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 COPY --chown=app:app . .
