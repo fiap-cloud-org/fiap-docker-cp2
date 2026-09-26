@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint e validação do Compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ruff
+        run: pipx run ruff check --select E9,F,B meu-microservico
+      - name: docker compose config
+        run: |
+          cp .env.example .env
+          docker compose config -q
+
+  smoke:
+    name: Build e smoke test
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gera o .env com senhas descartáveis
+        run: |
+          sed -e "s/troque-a-senha-root/$(openssl rand -hex 12)/" \
+              -e "s/troque-a-senha-da-app/$(openssl rand -hex 12)/" \
+              -e "s/^IMAGE_TAG=.*/IMAGE_TAG=ci/" .env.example > .env
+      - name: Sobe a stack e espera os healthchecks
+        run: docker compose up -d --build --wait --wait-timeout 180
+      - name: Testa as rotas
+        run: |
+          set -e
+          U=http://localhost:5000
+          curl -fsS $U/status | grep -q '"banco":"conectado"'
+          test "$(curl -fsS $U/usuarios | python3 -c 'import sys,json; print(len(json.load(sys.stdin)))')" = "5"
+          curl -fsS $U/usuarios | grep -vq senha
+          curl -fsS -H 'Content-Type: application/json' -d '{"nome":"Usuário CI","email":"ci@exemplo.com","senha":"senha-de-teste-ci"}' $U/usuarios
+          test "$(curl -s -o /dev/null -w '%{http_code}' $U/usuarios/999)" = "404"
+          curl -fsS $U/ | grep -q "Usuário CI"
+          docker compose exec -T microservico id -u | grep -qx 1001
+      - name: Dados sobrevivem a recriar os containers (volume dados_mysql)
+        run: |
+          docker compose down
+          docker compose up -d --wait --wait-timeout 180
+          curl -fsS http://localhost:5000/usuarios | grep -q "ci@exemplo.com"
+      - name: Logs em caso de falha
+        if: failure()
+        run: docker compose logs
+      - name: Derruba a stack
+        if: always()
+        run: docker compose down -v
