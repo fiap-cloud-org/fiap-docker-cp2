@@ -1,7 +1,7 @@
 import os
 
 import pymysql
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
@@ -25,6 +25,22 @@ CAMPOS_USUARIO = 'id, nome, email'
 
 def conectar():
     return pymysql.connect(**DB_CONFIG)
+
+
+@app.route('/', methods=['GET'])
+def pagina_usuarios():
+    """Página HTML com a lista de usuários e um formulário de cadastro"""
+    usuarios, erro = [], None
+    try:
+        conn = conectar()
+        with conn, conn.cursor() as cur:
+            cur.execute(f"SELECT {CAMPOS_USUARIO} FROM usuarios ORDER BY id")
+            usuarios = cur.fetchall()
+    except pymysql.MySQLError as e:
+        app.logger.error("Erro ao carregar a página: %s", e)
+        erro = "Não foi possível conectar ao MySQL."
+    return render_template('index.html', usuarios=usuarios, erro=erro,
+                           banco=DB_CONFIG['database'], host=DB_CONFIG['host'])
 
 
 @app.route('/status', methods=['GET'])
