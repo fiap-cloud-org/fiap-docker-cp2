@@ -95,4 +95,5 @@ def criar_usuario():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Só para rodar sem Docker; o debug fica desligado a menos que FLASK_DEBUG=1
+    app.run(host='0.0.0.0', port=5000, debug=os.environ.get('FLASK_DEBUG') == '1')
