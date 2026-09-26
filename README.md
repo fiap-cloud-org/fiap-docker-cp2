@@ -33,7 +33,7 @@ Junto com o banco roda o **meu-microservico**, uma API em Flask que responde `/s
 | 1 | Persistência com volume | Volume nomeado `dados_mysql` montado em `/var/lib/mysql` |
 | 2 | MySQL em container | `mysql:8.0` com o `db/init.sql` em `/docker-entrypoint-initdb.d` (14 tabelas e dados de teste) |
 | 3 | Imagem personalizada | `docker commit` do container gerando `mysql_db:v1` e `mysql_db:v2` |
-| 4 | Docker Hub | [william201192/mysql_db](https://hub.docker.com/r/william201192/mysql_db/tags) com as tags `v1` e `v2` |
+| 4 | Docker Hub | Imagem `mysql_db` publicada com as tags `v1` e `v2` |
 | 5 | Teste de persistência | Os dados continuam após `stop`/`start` e após remover e recriar o container |
 
 ### Microserviço
@@ -121,13 +121,13 @@ docker exec -it mysql-container sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --d
 # Parte 3: imagens personalizadas
 docker commit mysql-container mysql_db:v1
 docker commit mysql-container mysql_db:v2
-docker tag mysql_db:v1 william201192/mysql_db:v1
-docker tag mysql_db:v2 william201192/mysql_db:v2
+docker tag mysql_db:v1 <seu-usuario>/mysql_db:v1
+docker tag mysql_db:v2 <seu-usuario>/mysql_db:v2
 
 # Parte 4: Docker Hub
 docker login
-docker push william201192/mysql_db:v1
-docker push william201192/mysql_db:v2
+docker push <seu-usuario>/mysql_db:v1
+docker push <seu-usuario>/mysql_db:v2
 
 # Parte 5: persistência
 docker stop mysql-container && docker start mysql-container
@@ -160,7 +160,7 @@ curl http://localhost:5000/usuarios
 docker compose exec microservico id
 
 # Varredura da imagem
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image william201192/meu-microservico:latest
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image local/meu-microservico:latest
 ```
 
 Pontos principais de validação:

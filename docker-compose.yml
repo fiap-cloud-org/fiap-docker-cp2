@@ -27,7 +27,7 @@ services:
 
   microservico:
     build: ./meu-microservico
-    image: ${IMAGE_NAME:-william201192/meu-microservico}:${IMAGE_TAG:-latest}
+    image: ${IMAGE_NAME:-local/meu-microservico}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       MYSQL_HOST: mysql
