@@ -1,3 +1,6 @@
+-- O cliente do entrypoint do MySQL lê o script em latin1; sem isso os acentos viram mojibake
+SET NAMES utf8mb4;
+
 -- Desabilita temporariamente as chaves estrangeiras para evitar erros de dependência
 SET FOREIGN_KEY_CHECKS=0;
 
