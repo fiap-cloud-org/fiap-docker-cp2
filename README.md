@@ -46,16 +46,16 @@ Junto com o banco roda o **meu-microservico**, uma API em Flask que responde `/s
 | `GET /usuarios/<id>` | Um usuário (404 se não existir) |
 | `POST /usuarios` | Cria um usuário com `nome`, `email` e `senha` (mín. 8); grava só o hash; 409 se o e-mail já existir |
 
-### Melhorias em relação à entrega original
+### Decisões técnicas
 
-| Antes | Agora |
-|---|---|
-| Senhas do MySQL escritas no README e no Dockerfile | Senhas só no `.env` (fora do Git); o Compose falha se faltarem (`${VAR:?}`) |
-| Senhas dos usuários de teste em texto puro no `init.sql` | Só hashes PBKDF2 de valores aleatórios |
-| `python:3.9` rodando como root com `debug=True` | Multi-stage em `python:3.12-alpine`, usuário `app` (UID 1001), Gunicorn, sem pip e com healthcheck |
-| Flask 2.0.1, Werkzeug 2.0.1 e Gunicorn 20.1.0 (13 CVEs no Trivy) | Flask 3.1.3, Werkzeug 3.1.6 e Gunicorn 23.0.0; o Trivy não acha CVE na imagem (26/09/2026) |
-| Acentos do `init.sql` gravados como mojibake (`EletrÃ´nicos`) | `SET NAMES utf8mb4` no script |
-| `docker run` manual para cada container | `docker-compose.yml` com healthchecks e o app esperando o banco |
+| Ponto | Como ficou | Por quê |
+|---|---|---|
+| Senhas do MySQL | Só no `.env` (fora do Git); o Compose falha se faltarem (`${VAR:?}`) | Nenhuma senha no código, no Dockerfile ou no README |
+| Usuários de teste | O `init.sql` grava só hashes PBKDF2 | A API nunca guarda nem devolve senha em texto puro |
+| Imagem | Multi-stage em `python:3.12-alpine`, usuário `app` (UID 1001), Gunicorn, sem pip e com healthcheck | Imagem pequena, sem root e sem servidor de desenvolvimento |
+| Dependências | Flask 3.1.3, Werkzeug 3.1.6 e Gunicorn 23.0.0 | O Trivy não acha CVE na imagem (26/09/2026) |
+| Acentos | `SET NAMES utf8mb4` no `init.sql` | Os dados de exemplo ficam com acentuação correta no banco |
+| Orquestração | `docker-compose.yml` com healthchecks e o app esperando o banco | Sobe tudo com um comando; o roteiro com `docker run` do checkpoint continua abaixo |
 
 ## Tecnologias utilizadas
 
